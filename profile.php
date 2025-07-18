@@ -515,31 +515,23 @@ try {
 </style>
 
 <script>
-// Set minimum date to today
-document.getElementById('appointment_date').min = new Date().toISOString().split('T')[0];
-
-// Handle form submission
-document.getElementById('bookingForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    
-    try {
-        const response = await fetch('api/book_appointment.php', {
-            method: 'POST',
-            body: formData
+document.addEventListener('DOMContentLoaded', function() {
+    var bookingForm = document.getElementById('bookingForm');
+    if (bookingForm) {
+        bookingForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(bookingForm);
+            fetch('api/book_appointment.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                showToast(data.message, data.success ? 'success' : 'error');
+                if (data.success) setTimeout(() => window.location.reload(), 1200);
+            })
+            .catch(() => showToast('Booking failed. Please try again.', 'error'));
         });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showAlert('Appointment booked successfully!', 'success');
-            this.reset();
-        } else {
-            showAlert(result.message || 'Booking failed', 'error');
-        }
-    } catch (error) {
-        showAlert('Error booking appointment', 'error');
     }
 });
 </script>

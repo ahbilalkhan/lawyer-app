@@ -14,7 +14,49 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 // Check if user is logged in
-if (!isset($_SESSION['user_id']) || $_SESSION['user_type'] !== 'customer') {
+if (!isset($_SESSION['user_id'])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Please login to continue']);
+    exit;
+}
+
+$action = $_POST['action'] ?? '';
+
+if ($action === 'accept' || $action === 'cancel') {
+    // Only lawyers can accept/cancel
+    if ($_SESSION['user_type'] !== 'lawyer') {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Only lawyers can perform this action']);
+        exit;
+    }
+    $appointmentId = intval($_POST['appointment_id'] ?? 0);
+    if (!$appointmentId) {
+        echo json_encode(['success' => false, 'message' => 'Invalid appointment']);
+        exit;
+    }
+    // Check if this appointment belongs to the logged-in lawyer
+    $stmt = $pdo->prepare('SELECT a.*, lp.user_id as lawyer_user_id FROM appointments a JOIN lawyer_profiles lp ON a.lawyer_id = lp.id WHERE a.id = ?');
+    $stmt->execute([$appointmentId]);
+    $appt = $stmt->fetch();
+    if (!$appt || $appt['lawyer_user_id'] != $_SESSION['user_id']) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+        exit;
+    }
+    if ($action === 'accept') {
+        $stmt = $pdo->prepare('UPDATE appointments SET status = "confirmed" WHERE id = ?');
+        $stmt->execute([$appointmentId]);
+        echo json_encode(['success' => true, 'message' => 'Appointment accepted and confirmed.']);
+        exit;
+    } elseif ($action === 'cancel') {
+        $stmt = $pdo->prepare('UPDATE appointments SET status = "cancelled" WHERE id = ?');
+        $stmt->execute([$appointmentId]);
+        echo json_encode(['success' => true, 'message' => 'Appointment cancelled.']);
+        exit;
+    }
+}
+
+// Only customers can book
+if ($_SESSION['user_type'] !== 'customer') {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Please login as a customer to book appointments']);
     exit;

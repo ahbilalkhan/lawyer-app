@@ -10,8 +10,8 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $userId = $_SESSION['user_id'];
-$userType = $_SESSION['user_type'];
-$fullName = $_SESSION['full_name'];
+$userType = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : '';
+$fullName = isset($_SESSION['full_name']) ? $_SESSION['full_name'] : '';
 
 // Get user-specific data
 try {
@@ -86,7 +86,7 @@ try {
 
 <div class="dashboard-container">
     <div class="dashboard-header">
-        <h1>Welcome, <?php echo htmlspecialchars($fullName); ?>!</h1>
+        <h1>Welcome, <?php echo htmlspecialchars($fullName ?? ''); ?>!</h1>
         <p class="user-type-badge <?php echo $userType; ?>">
             <i class="fas fa-<?php echo $userType === 'lawyer' ? 'user-tie' : 'user'; ?>"></i>
             <?php echo ucfirst($userType); ?>
@@ -119,7 +119,7 @@ try {
                         </span>
                     </div>
                 </div>
-                <a href="profile-edit.php" class="btn btn-primary">Edit Profile</a>
+                <a href="edit_profile.php" class="btn btn-primary">Edit Profile</a>
             </div>
 
             <!-- Quick Stats -->
@@ -177,7 +177,7 @@ try {
             <?php else: ?>
                 <p class="no-data">No appointments yet.</p>
             <?php endif; ?>
-            <a href="appointments.php" class="btn btn-primary">View All Appointments</a>
+            <a href="lawyer_appointments.php" class="btn btn-primary">View All Appointments</a>
         </div>
 
         <!-- Recent Reviews -->
@@ -215,10 +215,10 @@ try {
                     <a href="lawyers.php" class="btn btn-primary">
                         <i class="fas fa-search"></i> Find Lawyers
                     </a>
-                    <a href="appointments.php" class="btn btn-secondary">
+                    <a href="my_appointments.php" class="btn btn-secondary">
                         <i class="fas fa-calendar"></i> My Appointments
                     </a>
-                    <a href="profile-edit.php" class="btn btn-secondary">
+                    <a href="edit_profile.php" class="btn btn-secondary">
                         <i class="fas fa-user-edit"></i> Edit Profile
                     </a>
                 </div>
@@ -270,7 +270,7 @@ try {
             <?php else: ?>
                 <p class="no-data">No appointments yet. <a href="lawyers.php">Find a lawyer</a> to book your first appointment.</p>
             <?php endif; ?>
-            <a href="appointments.php" class="btn btn-primary">View All Appointments</a>
+            <a href="my_appointments.php" class="btn btn-primary">View All Appointments</a>
         </div>
 
         <!-- Recent Reviews -->

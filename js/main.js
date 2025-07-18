@@ -293,6 +293,35 @@ function showAlert(message, type = 'info') {
     }, 5000);
 }
 
+// Show toast message
+function showToast(message, type = 'info') {
+    let container = document.querySelector('.toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    // Scroll to toast and ensure it's visible
+    setTimeout(() => {
+        const rect = container.getBoundingClientRect();
+        if (rect.top < 0 || rect.top > window.innerHeight) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            container.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+        }
+    }, 50);
+    setTimeout(() => {
+        toast.remove();
+        if (container.children.length === 0) {
+            container.remove();
+        }
+    }, 3000);
+}
+
 // Format date for display
 function formatDate(dateString) {
     const date = new Date(dateString);
