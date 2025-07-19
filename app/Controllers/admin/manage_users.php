@@ -313,6 +313,53 @@ if (!empty($params)) {
   border: 1.5px solid #e0e7ef;
   font-size: 1rem;
 }
+.toast-container {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+.toast {
+    min-width: 220px;
+    max-width: 350px;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    color: #fff;
+    font-weight: 500;
+    font-size: 1rem;
+    box-shadow: 0 2px 12px rgba(44,62,80,0.13);
+    opacity: 0;
+    transform: translateY(-20px);
+    animation: toast-in 0.4s forwards, toast-out 0.4s 2.6s forwards;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+}
+.toast-success {
+    background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+}
+.toast-error {
+    background: linear-gradient(90deg, #ef4444 0%, #b91c1c 100%);
+}
+.toast-info {
+    background: linear-gradient(90deg, #2563eb 0%, #38bdf8 100%);
+}
+@keyframes toast-in {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+@keyframes toast-out {
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
 </style> 
 
 <script>
@@ -341,27 +388,50 @@ document.addEventListener('DOMContentLoaded', function() {
     window.onclick = function(event) { if (event.target === modal) modal.style.display = 'none'; };
     editForm.onsubmit = function(e) {
         e.preventDefault();
-        const formData = new FormData(editForm);
+        // Validate all fields before sending
+        const userId = editForm.user_id.value.trim();
+        const fullName = editForm.full_name.value.trim();
+        const email = editForm.email.value.trim();
+        const userType = editForm.user_type.value.trim();
+        const isActive = editForm.is_active.value;
+        if (!userId || !fullName || !email || !userType) {
+            showToast('All fields are required.', 'error');
+            return;
+        }
+        const formData = new URLSearchParams();
         formData.append('action', 'edit');
+        formData.append('user_id', userId);
+        formData.append('full_name', fullName);
+        formData.append('email', email);
+        formData.append('user_type', userType);
+        formData.append('is_active', isActive);
         fetch('user_actions.php', {
             method: 'POST',
-            body: new URLSearchParams(formData)
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData.toString()
         })
         .then(res => res.json())
         .then(data => {
-            showToast(data.message, data.success ? 'success' : 'error');
-            if (data.success && editingRow) {
-                // Update row in table
-                editingRow.querySelector('td:nth-child(3)').textContent = editForm.full_name.value;
-                editingRow.querySelector('td:nth-child(4)').textContent = editForm.email.value;
-                editingRow.querySelector('td:nth-child(5) .badge').textContent = editForm.user_type.value.charAt(0).toUpperCase() + editForm.user_type.value.slice(1);
-                editingRow.querySelector('td:nth-child(5) .badge').className = 'badge badge-' + editForm.user_type.value;
-                editingRow.querySelector('td:nth-child(6) .badge').textContent = editForm.is_active.value === '1' ? 'Active' : 'Inactive';
-                editingRow.querySelector('td:nth-child(6) .badge').className = 'badge ' + (editForm.is_active.value === '1' ? 'badge-active' : 'badge-inactive');
+            if (!data.success) {
+                showToast(data.message || 'Failed to update user', 'error');
+                console.error('User update error:', data);
+                return;
+            }
+            showToast(data.message, 'success');
+            if (editingRow) {
+                editingRow.querySelector('td:nth-child(3)').textContent = fullName;
+                editingRow.querySelector('td:nth-child(4)').textContent = email;
+                editingRow.querySelector('td:nth-child(5) .badge').textContent = userType.charAt(0).toUpperCase() + userType.slice(1);
+                editingRow.querySelector('td:nth-child(5) .badge').className = 'badge badge-' + userType;
+                editingRow.querySelector('td:nth-child(6) .badge').textContent = isActive === '1' ? 'Active' : 'Inactive';
+                editingRow.querySelector('td:nth-child(6) .badge').className = 'badge ' + (isActive === '1' ? 'badge-active' : 'badge-inactive');
                 modal.style.display = 'none';
             }
         })
-        .catch(() => showToast('Failed to update user', 'error'));
+        .catch(err => {
+            showToast('Failed to update user', 'error');
+            console.error('AJAX error:', err);
+        });
     };
     // Confirmation Modal logic
     const confirmModal = document.getElementById('confirmModal');

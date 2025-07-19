@@ -33,6 +33,25 @@ $basePath = $isInPublicFolder ? '' : 'public/';
                 
                 <div class="auth-buttons">
                     <?php if (isset($_SESSION['user_id'])): ?>
+                        <div class="user-avatar" style="display:inline-block;vertical-align:middle;margin-right:10px;">
+                            <?php if (!empty($_SESSION['profile_image'])): ?>
+                                <img src="<?php echo htmlspecialchars($_SESSION['profile_image']); ?>" alt="Avatar" style="width:40px;height:40px;object-fit:cover;border-radius:50%;border:2px solid #ccc;" />
+                            <?php else: ?>
+                                <div style="width:40px;height:40px;background:#888;color:#fff;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:bold;font-size:18px;border:2px solid #ccc;">
+                                    <?php
+                                        $initials = '';
+                                        if (!empty($_SESSION['full_name'])) {
+                                            $names = explode(' ', $_SESSION['full_name']);
+                                            $initials .= strtoupper(substr($names[0], 0, 1));
+                                            if (count($names) > 1) {
+                                                $initials .= strtoupper(substr($names[count($names)-1], 0, 1));
+                                            }
+                                        }
+                                        echo $initials;
+                                    ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                         <a href="dashboard.php" class="btn btn-secondary">
                             <i class="fas fa-user"></i> Dashboard
                         </a>

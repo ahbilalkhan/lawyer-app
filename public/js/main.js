@@ -321,6 +321,7 @@ function showToast(message, type = 'info') {
         }
     }, 3000);
 }
+window.showToast = showToast;
 
 // Format date for display
 function formatDate(dateString) {

@@ -63,7 +63,7 @@ if (!empty($params)) {
 $totalPages = ceil($totalLawyers / $limit);
 
 // Get lawyers
-$sql = "SELECT lp.id, u.full_name, lp.specialization, lp.experience_years, lp.location, lp.consultation_fee, lp.rating, lp.total_reviews, lp.bio, lp.office_address, lp.availability_status, GROUP_CONCAT(DISTINCT ls.service_type) as services FROM lawyer_profiles lp JOIN users u ON lp.user_id = u.id LEFT JOIN lawyer_services ls ON lp.id = ls.lawyer_id WHERE $whereClause GROUP BY lp.id ORDER BY lp.rating DESC, lp.total_reviews DESC LIMIT $limit OFFSET $offset";
+$sql = "SELECT lp.id, u.full_name, u.profile_image, lp.specialization, lp.experience_years, lp.location, lp.consultation_fee, lp.rating, lp.total_reviews, lp.bio, lp.office_address, lp.availability_status, GROUP_CONCAT(DISTINCT ls.service_type) as services FROM lawyer_profiles lp JOIN users u ON lp.user_id = u.id LEFT JOIN lawyer_services ls ON lp.id = ls.lawyer_id WHERE $whereClause GROUP BY lp.id ORDER BY lp.rating DESC, lp.total_reviews DESC LIMIT $limit OFFSET $offset";
 if (!empty($params)) {
     $stmt = mysqli_prepare($conn, $sql);
     mysqli_stmt_bind_param($stmt, $paramTypes, ...$params);
@@ -169,7 +169,11 @@ if (!empty($params)) {
             <?php foreach ($lawyers as $lawyer): ?>
                 <div class="lawyer-card">
                     <div class="lawyer-avatar">
-                        <?php echo strtoupper(substr($lawyer['full_name'], 0, 1)); ?>
+                        <?php if (!empty($lawyer['profile_image'])): ?>
+                            <img src="<?php echo htmlspecialchars($lawyer['profile_image']); ?>" alt="Profile Image" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />
+                        <?php else: ?>
+                            <?php echo strtoupper(substr($lawyer['full_name'], 0, 1)); ?>
+                        <?php endif; ?>
                     </div>
                     
                     <div class="lawyer-info">

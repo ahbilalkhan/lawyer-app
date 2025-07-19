@@ -21,7 +21,7 @@ if (empty($username) || empty($password)) {
     exit;
 }
 
-$sql = "SELECT id, username, email, password, user_type, full_name, is_active FROM users WHERE username = ? OR email = ?";
+$sql = "SELECT id, username, email, password, user_type, full_name, profile_image, is_active FROM users WHERE username = ? OR email = ?";
 $stmt = mysqli_prepare($conn, $sql);
 mysqli_stmt_bind_param($stmt, 'ss', $username, $username);
 mysqli_stmt_execute($stmt);
@@ -49,6 +49,7 @@ $_SESSION['user_id'] = $user['id'];
 $_SESSION['username'] = $user['username'];
 $_SESSION['user_type'] = $user['user_type'];
 $_SESSION['full_name'] = $user['full_name'];
+$_SESSION['profile_image'] = $user['profile_image'];
 
 // Determine redirect based on user type
 $redirect = 'dashboard.php';
@@ -64,7 +65,8 @@ echo json_encode([
         'id' => $user['id'],
         'username' => $user['username'],
         'user_type' => $user['user_type'],
-        'full_name' => $user['full_name']
+        'full_name' => $user['full_name'],
+        'profile_image' => $user['profile_image']
     ]
 ]);
 ?>

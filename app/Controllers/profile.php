@@ -10,7 +10,7 @@ if ($lawyerId === 0) {
 }
 
 // Get lawyer details
-$sql = "SELECT lp.*, u.full_name, u.email, u.phone, GROUP_CONCAT(DISTINCT ls.service_type) as services FROM lawyer_profiles lp JOIN users u ON lp.user_id = u.id LEFT JOIN lawyer_services ls ON lp.id = ls.lawyer_id WHERE lp.id = ? AND lp.is_verified = 1 GROUP BY lp.id LIMIT 1";
+$sql = "SELECT lp.*, u.full_name, u.email, u.phone, u.profile_image, GROUP_CONCAT(DISTINCT ls.service_type) as services FROM lawyer_profiles lp JOIN users u ON lp.user_id = u.id LEFT JOIN lawyer_services ls ON lp.id = ls.lawyer_id WHERE lp.id = ? AND lp.is_verified = 1 GROUP BY lp.id LIMIT 1";
 $stmt = mysqli_prepare($conn, $sql);
 mysqli_stmt_bind_param($stmt, 'i', $lawyerId);
 mysqli_stmt_execute($stmt);
@@ -51,7 +51,11 @@ mysqli_stmt_close($timeSlotsStmt);
 <div class="profile-container">
     <div class="profile-header">
         <div class="profile-avatar">
-            <?php echo strtoupper(substr($lawyer['full_name'], 0, 1)); ?>
+            <?php if (!empty($lawyer['profile_image'])): ?>
+                <img src="<?php echo htmlspecialchars($lawyer['profile_image']); ?>" alt="Profile Image" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />
+            <?php else: ?>
+                <?php echo strtoupper(substr($lawyer['full_name'], 0, 1)); ?>
+            <?php endif; ?>
         </div>
         <div class="profile-info">
             <h1><?php echo htmlspecialchars($lawyer['full_name']); ?></h1>

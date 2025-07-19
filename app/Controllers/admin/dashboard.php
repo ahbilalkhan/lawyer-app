@@ -63,7 +63,7 @@ if ($result) {
             <h3><i class="fas fa-star"></i> Reviews</h3>
             <div class="stat-number"><?php echo $totalReviews; ?></div>
             <div class="stat-label">Total Reviews</div>
-            <a href="#" class="btn btn-primary btn-full"><i class="fas fa-star"></i> View Reviews</a>
+            <a href="reviews.php" class="btn btn-primary btn-full"><i class="fas fa-star"></i> View Reviews</a>
         </div>
         <div class="dashboard-card">
             <h3><i class="fas fa-cogs"></i> Platform Settings</h3>

@@ -54,10 +54,98 @@ while ($row = mysqli_fetch_assoc($result)) {
     $appointments[] = $row;
 }
 mysqli_stmt_close($stmt);
+
+// Fetch all customers
+$customers = [];
+$res = mysqli_query($conn, "SELECT id, full_name FROM users WHERE user_type = 'customer' AND is_active = 1 ORDER BY full_name");
+while ($row = mysqli_fetch_assoc($res)) { $customers[] = $row; }
+// Fetch all lawyers
+$lawyers = [];
+$res = mysqli_query($conn, "SELECT lp.id, u.full_name FROM lawyer_profiles lp JOIN users u ON lp.user_id = u.id WHERE u.is_active = 1 ORDER BY u.full_name");
+while ($row = mysqli_fetch_assoc($res)) { $lawyers[] = $row; }
+
+// Handle create appointment
+$create_success = false;
+$create_error = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['admin_create_appointment'])) {
+    $customer_id = intval($_POST['customer_id'] ?? 0);
+    $lawyer_id = intval($_POST['lawyer_id'] ?? 0);
+    $date = $_POST['appointment_date'] ?? '';
+    $time = $_POST['appointment_time'] ?? '';
+    $meeting_type = $_POST['meeting_type'] ?? 'office';
+    $notes = trim($_POST['notes'] ?? '');
+    if ($customer_id && $lawyer_id && $date && $time) {
+        $sql = "INSERT INTO appointments (customer_id, lawyer_id, appointment_date, appointment_time, meeting_type, notes, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())";
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, 'iissss', $customer_id, $lawyer_id, $date, $time, $meeting_type, $notes);
+        if (mysqli_stmt_execute($stmt)) {
+            header('Location: manage_appointments.php?created=1');
+            exit;
+        } else {
+            $create_error = 'Failed to create appointment.';
+        }
+        mysqli_stmt_close($stmt);
+    } else {
+        $create_error = 'All fields except notes are required.';
+    }
+}
 ?>
 <div class="dashboard-container">
     <div class="dashboard-header">
         <h1><i class="fas fa-calendar"></i> Manage Appointments</h1>
+    </div>
+    <?php if (isset($_GET['created']) && $_GET['created'] == 1): ?>
+        <div class="alert alert-success">Appointment created successfully!</div>
+    <?php elseif ($create_error): ?>
+        <div class="alert alert-error"><?php echo htmlspecialchars($create_error); ?></div>
+    <?php endif; ?>
+    <div id="createApptModal" class="modal" style="display:none;position:fixed;z-index:9999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.18);">
+        <div class="modal-content" style="background:#fff;max-width:420px;margin:5% auto;padding:2rem 2rem 1.5rem 2rem;border-radius:10px;position:relative;">
+            <span onclick="document.getElementById('createApptModal').style.display='none'" style="position:absolute;top:1rem;right:1.2rem;font-size:1.5rem;cursor:pointer;">&times;</span>
+            <h2 style="margin-bottom:1.2rem;color:#2563eb;"><i class="fas fa-calendar-plus"></i> Create Appointment</h2>
+            <form method="post">
+                <input type="hidden" name="admin_create_appointment" value="1">
+                <div class="form-group">
+                    <label>Customer</label>
+                    <select name="customer_id" required>
+                        <option value="">Select customer</option>
+                        <?php foreach ($customers as $c): ?>
+                            <option value="<?php echo $c['id']; ?>"><?php echo htmlspecialchars($c['full_name']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Lawyer</label>
+                    <select name="lawyer_id" required>
+                        <option value="">Select lawyer</option>
+                        <?php foreach ($lawyers as $l): ?>
+                            <option value="<?php echo $l['id']; ?>"><?php echo htmlspecialchars($l['full_name']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Date</label>
+                    <input type="date" name="appointment_date" required>
+                </div>
+                <div class="form-group">
+                    <label>Time</label>
+                    <input type="time" name="appointment_time" required>
+                </div>
+                <div class="form-group">
+                    <label>Meeting Type</label>
+                    <select name="meeting_type" required>
+                        <option value="office">Office</option>
+                        <option value="online">Online</option>
+                        <option value="phone">Phone</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" rows="2"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Create Appointment</button>
+            </form>
+        </div>
     </div>
     <form method="get" class="filter-form" style="margin-bottom:2rem; display:flex; flex-wrap:wrap; gap:1.2rem; align-items:end;">
         <div>
