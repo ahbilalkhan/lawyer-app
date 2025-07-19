@@ -23,11 +23,11 @@
         </div>
     </footer>
 
-    <?php if (!isset($jsPath)) {
-        $baseDir = dirname($_SERVER['SCRIPT_NAME']);
-        $jsPath = ($baseDir === '/admin') ? '../js/main.js' : 'js/main.js';
-    }
+    <?php
+    // Use same logic as header for consistent asset paths
+    $isInPublicFolder = (strpos($_SERVER['SCRIPT_NAME'], '/public/') !== false);
+    $basePath = $isInPublicFolder ? '' : 'public/';
     ?>
-    <script src="<?php echo $jsPath; ?>"></script>
+    <script src="<?php echo $basePath; ?>js/main.js"></script>
 </body>
 </html>

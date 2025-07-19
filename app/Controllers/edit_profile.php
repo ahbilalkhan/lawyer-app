@@ -5,8 +5,8 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 $page_title = 'Edit Profile';
-include 'header.php';
-require_once 'db.php';
+include __DIR__ . '/../Views/header.php';
+require_once __DIR__ . '/../Models/db.php';
 
 $userId = $_SESSION['user_id'];
 $success = false;
@@ -21,20 +21,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$fullName || !$email) {
         $error = 'Full name and email are required.';
     } else {
-        try {
-            $stmt = $pdo->prepare('UPDATE users SET full_name=?, email=?, phone=?, address=? WHERE id=?');
-            $stmt->execute([$fullName, $email, $phone, $address, $userId]);
+        $stmt = mysqli_prepare($conn, 'UPDATE users SET full_name=?, email=?, phone=?, address=? WHERE id=?');
+        mysqli_stmt_bind_param($stmt, 'ssssi', $fullName, $email, $phone, $address, $userId);
+        if (mysqli_stmt_execute($stmt)) {
             $_SESSION['full_name'] = $fullName;
             $success = true;
-        } catch (PDOException $e) {
-            $error = 'Database error: ' . $e->getMessage();
+        } else {
+            $error = 'Database error: ' . mysqli_error($conn);
         }
+        mysqli_stmt_close($stmt);
     }
 }
 // Fetch user data
-$stmt = $pdo->prepare('SELECT username, full_name, email, phone, address FROM users WHERE id=?');
-$stmt->execute([$userId]);
-$user = $stmt->fetch();
+$stmt = mysqli_prepare($conn, 'SELECT username, full_name, email, phone, address FROM users WHERE id=?');
+mysqli_stmt_bind_param($stmt, 'i', $userId);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$user = mysqli_fetch_assoc($result);
+mysqli_stmt_close($stmt);
 ?>
 <div class="form-container">
     <h2>Edit Profile</h2>
@@ -67,4 +71,4 @@ document.addEventListener('DOMContentLoaded', function() {
     <?php endif; ?>
 });
 </script>
-<?php include 'footer.php'; ?> 
+<?php include __DIR__ . '/../Views/footer.php'; ?> 

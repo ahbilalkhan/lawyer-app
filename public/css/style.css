@@ -12,7 +12,9 @@ body {
     font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.7;
     color: #23272f;
-    background-color: #f4f7fb;
+    background:
+        linear-gradient(rgba(255,255,255,0.85), rgba(255,255,255,0.85)),
+        url('../img/1170654-supremecourtFBRSBRstory-1472235718.webp') center center / cover no-repeat fixed;
 }
 
 .container {
@@ -309,7 +311,7 @@ body {
 
 .btn-full {
     width: 100%;
-    margin-top: 1.2rem;
+    margin-top: 0.5rem;
 }
 
 /* Profile Section */
@@ -650,5 +652,83 @@ body {
     to {
         opacity: 0;
         transform: translateY(-20px);
+    }
+}
+
+/* --- Consistent card style for Legal Services section --- */
+.legal-services {
+    padding: 3rem 0;
+    background: white;
+    border-radius: 10px;
+    margin: 2rem 0;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.07);
+}
+
+.legal-services h2 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 2rem;
+}
+
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.service-card {
+    text-align: center;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    background: white;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.service-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 8px 24px rgba(37,99,235,0.13);
+}
+
+.service-card, .service-card > i, .service-card > h3, .service-card > p {
+    text-align: center !important;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.service-card > i {
+    display: block;
+    font-size: 3rem;
+    color: #3498db;
+    margin-bottom: 1rem;
+}
+
+.service-card > h3 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.service-card > p {
+    color: #555;
+    font-size: 1rem;
+    margin-bottom: 0;
+}
+
+.how-it-works h2 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 2rem;
+}
+
+.how-it-works, .legal-services {
+    padding: 3rem 2rem;
+}
+
+@media (max-width: 700px) {
+    .how-it-works, .legal-services {
+        padding: 2rem 1rem;
     }
 }

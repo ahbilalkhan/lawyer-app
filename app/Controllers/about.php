@@ -1,6 +1,6 @@
 <?php
 $page_title = "About Us";
-include 'header.php';
+include __DIR__ . '/../Views/header.php';
 ?>
 
 <div class="about-container">
@@ -316,4 +316,4 @@ include 'header.php';
 }
 </style>
 
-<?php include 'footer.php'; ?>
+<?php include __DIR__ . '/../Views/footer.php'; ?>

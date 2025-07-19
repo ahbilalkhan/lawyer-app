@@ -1,7 +1,7 @@
 <?php
 $page_title = "Dashboard";
-include 'header.php';
-require_once 'db.php';
+include __DIR__ . '/../Views/header.php';
+require_once __DIR__ . '/../Models/db.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -14,73 +14,77 @@ $userType = isset($_SESSION['user_type']) ? $_SESSION['user_type'] : '';
 $fullName = isset($_SESSION['full_name']) ? $_SESSION['full_name'] : '';
 
 // Get user-specific data
-try {
-    if ($userType === 'lawyer') {
-        // Get lawyer profile
-        $profileSql = "SELECT lp.*, u.email, u.phone, u.address 
-                      FROM lawyer_profiles lp 
-                      JOIN users u ON lp.user_id = u.id 
-                      WHERE lp.user_id = ?";
-        $profileStmt = $pdo->prepare($profileSql);
-        $profileStmt->execute([$userId]);
-        $profile = $profileStmt->fetch();
-        
-        // Get lawyer's appointments
-        $appointmentSql = "SELECT a.*, u.full_name as customer_name, u.phone as customer_phone 
-                          FROM appointments a 
-                          JOIN users u ON a.customer_id = u.id 
-                          WHERE a.lawyer_id = ? 
-                          ORDER BY a.appointment_date DESC, a.appointment_time DESC 
-                          LIMIT 10";
-        $appointmentStmt = $pdo->prepare($appointmentSql);
-        $appointmentStmt->execute([$profile['id']]);
-        $appointments = $appointmentStmt->fetchAll();
-        
-        // Get lawyer's services
-        $servicesSql = "SELECT service_type FROM lawyer_services WHERE lawyer_id = ?";
-        $servicesStmt = $pdo->prepare($servicesSql);
-        $servicesStmt->execute([$profile['id']]);
-        $services = $servicesStmt->fetchAll();
-        
-        // Get reviews
-        $reviewsSql = "SELECT r.*, u.full_name as customer_name 
-                      FROM reviews r 
-                      JOIN users u ON r.customer_id = u.id 
-                      WHERE r.lawyer_id = ? 
-                      ORDER BY r.created_at DESC 
-                      LIMIT 5";
-        $reviewsStmt = $pdo->prepare($reviewsSql);
-        $reviewsStmt->execute([$profile['id']]);
-        $reviews = $reviewsStmt->fetchAll();
-        
-    } else {
-        // Get customer's appointments
-        $appointmentSql = "SELECT a.*, lp.id as lawyer_profile_id, u.full_name as lawyer_name, 
-                          lp.specialization, lp.consultation_fee, lp.location 
-                          FROM appointments a 
-                          JOIN lawyer_profiles lp ON a.lawyer_id = lp.id 
-                          JOIN users u ON lp.user_id = u.id 
-                          WHERE a.customer_id = ? 
-                          ORDER BY a.appointment_date DESC, a.appointment_time DESC 
-                          LIMIT 10";
-        $appointmentStmt = $pdo->prepare($appointmentSql);
-        $appointmentStmt->execute([$userId]);
-        $appointments = $appointmentStmt->fetchAll();
-        
-        // Get customer's reviews
-        $reviewsSql = "SELECT r.*, u.full_name as lawyer_name 
-                      FROM reviews r 
-                      JOIN lawyer_profiles lp ON r.lawyer_id = lp.id 
-                      JOIN users u ON lp.user_id = u.id 
-                      WHERE r.customer_id = ? 
-                      ORDER BY r.created_at DESC 
-                      LIMIT 5";
-        $reviewsStmt = $pdo->prepare($reviewsSql);
-        $reviewsStmt->execute([$userId]);
-        $reviews = $reviewsStmt->fetchAll();
+$error = null;
+if ($userType === 'lawyer') {
+    // Get lawyer profile
+    $profileSql = "SELECT lp.*, u.email, u.phone, u.address FROM lawyer_profiles lp JOIN users u ON lp.user_id = u.id WHERE lp.user_id = ?";
+    $profileStmt = mysqli_prepare($conn, $profileSql);
+    mysqli_stmt_bind_param($profileStmt, 'i', $userId);
+    mysqli_stmt_execute($profileStmt);
+    $profileResult = mysqli_stmt_get_result($profileStmt);
+    $profile = mysqli_fetch_assoc($profileResult);
+    mysqli_stmt_close($profileStmt);
+
+    // Get lawyer's appointments
+    $appointmentSql = "SELECT a.*, u.full_name as customer_name, u.phone as customer_phone FROM appointments a JOIN users u ON a.customer_id = u.id WHERE a.lawyer_id = ? ORDER BY a.appointment_date DESC, a.appointment_time DESC LIMIT 10";
+    $appointmentStmt = mysqli_prepare($conn, $appointmentSql);
+    mysqli_stmt_bind_param($appointmentStmt, 'i', $profile['id']);
+    mysqli_stmt_execute($appointmentStmt);
+    $appointmentResult = mysqli_stmt_get_result($appointmentStmt);
+    $appointments = [];
+    while ($row = mysqli_fetch_assoc($appointmentResult)) {
+        $appointments[] = $row;
     }
-} catch (PDOException $e) {
-    $error = "Database error: " . $e->getMessage();
+    mysqli_stmt_close($appointmentStmt);
+
+    // Get lawyer's services
+    $servicesSql = "SELECT service_type FROM lawyer_services WHERE lawyer_id = ?";
+    $servicesStmt = mysqli_prepare($conn, $servicesSql);
+    mysqli_stmt_bind_param($servicesStmt, 'i', $profile['id']);
+    mysqli_stmt_execute($servicesStmt);
+    $servicesResult = mysqli_stmt_get_result($servicesStmt);
+    $services = [];
+    while ($row = mysqli_fetch_assoc($servicesResult)) {
+        $services[] = $row;
+    }
+    mysqli_stmt_close($servicesStmt);
+
+    // Get reviews
+    $reviewsSql = "SELECT r.*, u.full_name as customer_name FROM reviews r JOIN users u ON r.customer_id = u.id WHERE r.lawyer_id = ? ORDER BY r.created_at DESC LIMIT 5";
+    $reviewsStmt = mysqli_prepare($conn, $reviewsSql);
+    mysqli_stmt_bind_param($reviewsStmt, 'i', $profile['id']);
+    mysqli_stmt_execute($reviewsStmt);
+    $reviewsResult = mysqli_stmt_get_result($reviewsStmt);
+    $reviews = [];
+    while ($row = mysqli_fetch_assoc($reviewsResult)) {
+        $reviews[] = $row;
+    }
+    mysqli_stmt_close($reviewsStmt);
+
+} else {
+    // Get customer's appointments
+    $appointmentSql = "SELECT a.*, lp.id as lawyer_profile_id, u.full_name as lawyer_name, lp.specialization, lp.consultation_fee, lp.location FROM appointments a JOIN lawyer_profiles lp ON a.lawyer_id = lp.id JOIN users u ON lp.user_id = u.id WHERE a.customer_id = ? ORDER BY a.appointment_date DESC, a.appointment_time DESC LIMIT 10";
+    $appointmentStmt = mysqli_prepare($conn, $appointmentSql);
+    mysqli_stmt_bind_param($appointmentStmt, 'i', $userId);
+    mysqli_stmt_execute($appointmentStmt);
+    $appointmentResult = mysqli_stmt_get_result($appointmentStmt);
+    $appointments = [];
+    while ($row = mysqli_fetch_assoc($appointmentResult)) {
+        $appointments[] = $row;
+    }
+    mysqli_stmt_close($appointmentStmt);
+
+    // Get customer's reviews
+    $reviewsSql = "SELECT r.*, u.full_name as lawyer_name FROM reviews r JOIN lawyer_profiles lp ON r.lawyer_id = lp.id JOIN users u ON lp.user_id = u.id WHERE r.customer_id = ? ORDER BY r.created_at DESC LIMIT 5";
+    $reviewsStmt = mysqli_prepare($conn, $reviewsSql);
+    mysqli_stmt_bind_param($reviewsStmt, 'i', $userId);
+    mysqli_stmt_execute($reviewsStmt);
+    $reviewsResult = mysqli_stmt_get_result($reviewsStmt);
+    $reviews = [];
+    while ($row = mysqli_fetch_assoc($reviewsResult)) {
+        $reviews[] = $row;
+    }
+    mysqli_stmt_close($reviewsStmt);
 }
 ?>
 
@@ -149,17 +153,28 @@ try {
                         <span class="service-tag"><?php echo ucfirst(str_replace('_', ' ', $service['service_type'])); ?></span>
                     <?php endforeach; ?>
                 </div>
-                <a href="services-manage.php" class="btn btn-secondary">Manage Services</a>
+                <a href="services_manage.php" class="btn btn-secondary">Manage Services</a>
             </div>
         </div>
 
         <!-- Recent Appointments -->
         <div class="dashboard-card">
             <h3><i class="fas fa-calendar-alt"></i> Recent Appointments</h3>
+            <div class="appointments-filters" style="margin-bottom:1.2em; display:flex; gap:1em; flex-wrap:wrap; align-items:center;">
+                <input type="text" id="apptSearch" class="form-control" placeholder="Search by customer name..." style="padding:0.6em 1em; border-radius:7px; border:1.5px solid #e0e7ef; min-width:180px;">
+                <input type="date" id="apptDate" class="form-control" style="padding:0.6em 1em; border-radius:7px; border:1.5px solid #e0e7ef;">
+                <select id="apptStatus" class="form-control" style="padding:0.6em 1em; border-radius:7px; border:1.5px solid #e0e7ef; min-width:120px;">
+                    <option value="">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
             <?php if (!empty($appointments)): ?>
-                <div class="appointments-list">
+                <div class="appointments-list" id="appointmentsList">
                     <?php foreach ($appointments as $appointment): ?>
-                        <div class="appointment-item">
+                        <div class="appointment-item" data-customer="<?php echo htmlspecialchars(strtolower($appointment['customer_name'])); ?>" data-date="<?php echo htmlspecialchars($appointment['appointment_date']); ?>" data-status="<?php echo htmlspecialchars($appointment['status']); ?>">
                             <div class="appointment-info">
                                 <h4><?php echo htmlspecialchars($appointment['customer_name']); ?></h4>
                                 <p><i class="fas fa-calendar"></i> <?php echo date('M j, Y', strtotime($appointment['appointment_date'])); ?></p>
@@ -179,6 +194,33 @@ try {
             <?php endif; ?>
             <a href="lawyer_appointments.php" class="btn btn-primary">View All Appointments</a>
         </div>
+        <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const search = document.getElementById('apptSearch');
+    const date = document.getElementById('apptDate');
+    const status = document.getElementById('apptStatus');
+    const list = document.getElementById('appointmentsList');
+    if (!list) return;
+    function filterAppointments() {
+        const searchVal = (search.value || '').toLowerCase();
+        const dateVal = date.value;
+        const statusVal = status.value;
+        list.querySelectorAll('.appointment-item').forEach(function(item) {
+            const customer = item.getAttribute('data-customer');
+            const apptDate = item.getAttribute('data-date');
+            const apptStatus = item.getAttribute('data-status');
+            let show = true;
+            if (searchVal && !customer.includes(searchVal)) show = false;
+            if (dateVal && apptDate !== dateVal) show = false;
+            if (statusVal && apptStatus !== statusVal) show = false;
+            item.style.display = show ? '' : 'none';
+        });
+    }
+    search.addEventListener('input', filterAppointments);
+    date.addEventListener('change', filterAppointments);
+    status.addEventListener('change', filterAppointments);
+});
+</script>
 
         <!-- Recent Reviews -->
         <div class="dashboard-card">
@@ -556,4 +598,4 @@ try {
 }
 </style>
 
-<?php include 'footer.php'; ?>
+<?php include __DIR__ . '/../Views/footer.php'; ?>

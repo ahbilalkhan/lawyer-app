@@ -2,10 +2,9 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-// Determine correct asset path based on where the including script is
-$baseDir = dirname($_SERVER['SCRIPT_NAME']);
-$cssPath = ($baseDir === '/admin') ? '../css/style.css' : 'css/style.css';
-$jsPath = ($baseDir === '/admin') ? '../js/main.js' : 'js/main.js';
+// Get the current file path to determine if we're in public/ or need to adjust paths
+$isInPublicFolder = (strpos($_SERVER['SCRIPT_NAME'], '/public/') !== false);
+$basePath = $isInPublicFolder ? '' : 'public/';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -13,8 +12,9 @@ $jsPath = ($baseDir === '/admin') ? '../js/main.js' : 'js/main.js';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo isset($page_title) ? $page_title . ' - ' : ''; ?>LawyerConnect</title>
-    <link rel="stylesheet" href="<?php echo $cssPath; ?>">
+    <link rel="stylesheet" href="/public/css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="/public/img/favicon.webp">
 </head>
 <body>
     <header class="header">
@@ -29,9 +29,6 @@ $jsPath = ($baseDir === '/admin') ? '../js/main.js' : 'js/main.js';
                     <li><a href="lawyers.php">Find Lawyers</a></li>
                     <li><a href="about.php">About</a></li>
                     <li><a href="contact.php">Contact</a></li>
-                    <?php if (isset($_SESSION['user_id']) && isset($_SESSION['user_type']) && $_SESSION['user_type'] === 'admin'): ?>
-                        <li><a href="admin/dashboard.php">Admin</a></li>
-                    <?php endif; ?>
                 </ul>
                 
                 <div class="auth-buttons">

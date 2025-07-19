@@ -1,7 +1,7 @@
 <?php
 $page_title = "Find Lawyers";
-include 'header.php';
-require_once 'db.php';
+include __DIR__ . '/../Views/header.php';
+require_once __DIR__ . '/../Models/db.php';
 
 // Get search parameters
 $location = $_GET['location'] ?? '';
@@ -14,15 +14,18 @@ $offset = ($page - 1) * $limit;
 // Build search query
 $whereConditions = ["u.is_active = 1", "lp.is_verified = 1"];
 $params = [];
+$paramTypes = '';
 
 if (!empty($location)) {
     $whereConditions[] = "lp.location LIKE ?";
     $params[] = "%$location%";
+    $paramTypes .= 's';
 }
 
 if (!empty($service)) {
     $whereConditions[] = "EXISTS (SELECT 1 FROM lawyer_services ls WHERE ls.lawyer_id = lp.id AND ls.service_type = ?)";
     $params[] = $service;
+    $paramTypes .= 's';
 }
 
 if (!empty($experience)) {
@@ -44,46 +47,39 @@ if (!empty($experience)) {
 
 $whereClause = implode(' AND ', $whereConditions);
 
-try {
-    // Get total count for pagination
-    $countSql = "SELECT COUNT(*) as total 
-                 FROM lawyer_profiles lp 
-                 JOIN users u ON lp.user_id = u.id 
-                 WHERE $whereClause";
-    $countStmt = $pdo->prepare($countSql);
-    $countStmt->execute($params);
-    $totalLawyers = $countStmt->fetch()['total'];
-    $totalPages = ceil($totalLawyers / $limit);
+// Get total count for pagination
+$countSql = "SELECT COUNT(*) as total FROM lawyer_profiles lp JOIN users u ON lp.user_id = u.id WHERE $whereClause";
+if (!empty($params)) {
+    $countStmt = mysqli_prepare($conn, $countSql);
+    mysqli_stmt_bind_param($countStmt, $paramTypes, ...$params);
+    mysqli_stmt_execute($countStmt);
+    $countResult = mysqli_stmt_get_result($countStmt);
+    $totalLawyers = mysqli_fetch_assoc($countResult)['total'];
+    mysqli_stmt_close($countStmt);
+} else {
+    $countResult = mysqli_query($conn, $countSql);
+    $totalLawyers = mysqli_fetch_assoc($countResult)['total'];
+}
+$totalPages = ceil($totalLawyers / $limit);
 
-    // Get lawyers
-    $sql = "SELECT 
-                lp.id,
-                u.full_name,
-                lp.specialization,
-                lp.experience_years,
-                lp.location,
-                lp.consultation_fee,
-                lp.rating,
-                lp.total_reviews,
-                lp.bio,
-                lp.office_address,
-                lp.availability_status,
-                GROUP_CONCAT(DISTINCT ls.service_type) as services
-            FROM lawyer_profiles lp
-            JOIN users u ON lp.user_id = u.id
-            LEFT JOIN lawyer_services ls ON lp.id = ls.lawyer_id
-            WHERE $whereClause
-            GROUP BY lp.id
-            ORDER BY lp.rating DESC, lp.total_reviews DESC
-            LIMIT $limit OFFSET $offset";
-    
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    $lawyers = $stmt->fetchAll();
-
-} catch (PDOException $e) {
-    $error = "Database error: " . $e->getMessage();
+// Get lawyers
+$sql = "SELECT lp.id, u.full_name, lp.specialization, lp.experience_years, lp.location, lp.consultation_fee, lp.rating, lp.total_reviews, lp.bio, lp.office_address, lp.availability_status, GROUP_CONCAT(DISTINCT ls.service_type) as services FROM lawyer_profiles lp JOIN users u ON lp.user_id = u.id LEFT JOIN lawyer_services ls ON lp.id = ls.lawyer_id WHERE $whereClause GROUP BY lp.id ORDER BY lp.rating DESC, lp.total_reviews DESC LIMIT $limit OFFSET $offset";
+if (!empty($params)) {
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, $paramTypes, ...$params);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
     $lawyers = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $lawyers[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+} else {
+    $result = mysqli_query($conn, $sql);
+    $lawyers = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $lawyers[] = $row;
+    }
 }
 ?>
 
@@ -533,4 +529,4 @@ try {
 }
 </style>
 
-<?php include 'footer.php'; ?>
+<?php include __DIR__ . '/../Views/footer.php'; ?>

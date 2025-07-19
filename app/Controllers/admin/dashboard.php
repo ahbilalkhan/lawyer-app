@@ -5,18 +5,31 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_type']) || $_SESSION[
     exit;
 }
 $page_title = 'Admin Dashboard';
-include '../header.php';
-require_once '../db.php';
+include __DIR__ . '/../../Views/header.php';
+require_once __DIR__ . '/../../Models/db.php';
 
 // Get counts for dashboard
 $totalUsers = $totalLawyers = $totalAppointments = $totalReviews = 0;
-try {
-    $totalUsers = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
-    $totalLawyers = $pdo->query("SELECT COUNT(*) FROM users WHERE user_type = 'lawyer'")->fetchColumn();
-    $totalAppointments = $pdo->query("SELECT COUNT(*) FROM appointments")->fetchColumn();
-    $totalReviews = $pdo->query("SELECT COUNT(*) FROM reviews")->fetchColumn();
-} catch (PDOException $e) {
-    // Optionally show error toast or log error
+
+$result = mysqli_query($conn, "SELECT COUNT(*) as cnt FROM users");
+if ($result) {
+    $row = mysqli_fetch_assoc($result);
+    $totalUsers = $row['cnt'];
+}
+$result = mysqli_query($conn, "SELECT COUNT(*) as cnt FROM users WHERE user_type = 'lawyer'");
+if ($result) {
+    $row = mysqli_fetch_assoc($result);
+    $totalLawyers = $row['cnt'];
+}
+$result = mysqli_query($conn, "SELECT COUNT(*) as cnt FROM appointments");
+if ($result) {
+    $row = mysqli_fetch_assoc($result);
+    $totalAppointments = $row['cnt'];
+}
+$result = mysqli_query($conn, "SELECT COUNT(*) as cnt FROM reviews");
+if ($result) {
+    $row = mysqli_fetch_assoc($result);
+    $totalReviews = $row['cnt'];
 }
 ?>
 
@@ -44,7 +57,7 @@ try {
             <h3><i class="fas fa-calendar-alt"></i> Appointments</h3>
             <div class="stat-number"><?php echo $totalAppointments; ?></div>
             <div class="stat-label">Total Appointments</div>
-            <a href="#" class="btn btn-primary btn-full"><i class="fas fa-calendar-alt"></i> View Appointments</a>
+            <a href="manage_appointments.php" class="btn btn-primary btn-full"><i class="fas fa-calendar-alt"></i> Manage Appointments</a>
         </div>
         <div class="dashboard-card">
             <h3><i class="fas fa-star"></i> Reviews</h3>
@@ -60,7 +73,7 @@ try {
     </div>
 </div>
 
-<?php include '../footer.php'; ?>
+<?php include __DIR__ . '/../../Views/footer.php'; ?>
 
 <style>
 .user-type-badge.admin {

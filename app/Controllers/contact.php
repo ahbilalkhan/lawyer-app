@@ -1,6 +1,6 @@
 <?php
 $page_title = "Contact Us";
-include 'header.php';
+include __DIR__ . '/../Views/header.php';
 ?>
 <div class="contact-container">
     <div class="contact-header">
@@ -302,4 +302,4 @@ document.getElementById('contactForm').addEventListener('submit', function(e) {
 });
 </script>
 
-<?php include 'footer.php'; ?>
+<?php include __DIR__ . '/../Views/footer.php'; ?>

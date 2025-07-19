@@ -5,42 +5,38 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 $page_title = 'View Appointment';
-include 'header.php';
-require_once 'db.php';
+include __DIR__ . '/../Views/header.php';
+require_once __DIR__ . '/../Models/db.php';
 
 $appointmentId = intval($_GET['id'] ?? 0);
 if (!$appointmentId) {
     echo '<div class="dashboard-container"><div class="dashboard-header"><h1>Invalid appointment</h1></div></div>';
-    include 'footer.php';
+    include __DIR__ . '/../Views/footer.php';
     exit;
 }
-$stmt = $pdo->prepare('SELECT a.*, 
-    u1.full_name as customer_name, u1.email as customer_email, u1.phone as customer_phone, u1.id as customer_id,
-    lp.id as lawyer_profile_id, u2.full_name as lawyer_name, u2.email as lawyer_email, u2.phone as lawyer_phone, u2.id as lawyer_user_id
-    FROM appointments a
-    JOIN users u1 ON a.customer_id = u1.id
-    JOIN lawyer_profiles lp ON a.lawyer_id = lp.id
-    JOIN users u2 ON lp.user_id = u2.id
-    WHERE a.id = ?');
-$stmt->execute([$appointmentId]);
-$appt = $stmt->fetch();
+$stmt = mysqli_prepare($conn, 'SELECT a.*, u1.full_name as customer_name, u1.email as customer_email, u1.phone as customer_phone, u1.id as customer_id, lp.id as lawyer_profile_id, u2.full_name as lawyer_name, u2.email as lawyer_email, u2.phone as lawyer_phone, u2.id as lawyer_user_id FROM appointments a JOIN users u1 ON a.customer_id = u1.id JOIN lawyer_profiles lp ON a.lawyer_id = lp.id JOIN users u2 ON lp.user_id = u2.id WHERE a.id = ?');
+mysqli_stmt_bind_param($stmt, 'i', $appointmentId);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$appt = mysqli_fetch_assoc($result);
+mysqli_stmt_close($stmt);
 if (!$appt) {
     echo '<div class="dashboard-container"><div class="dashboard-header"><h1>Appointment not found</h1></div></div>';
-    include 'footer.php';
+    include __DIR__ . '/../Views/footer.php';
     exit;
 }
 $userId = $_SESSION['user_id'];
 $userType = $_SESSION['user_type'] ?? '';
 if ($userId != $appt['customer_id'] && $userId != $appt['lawyer_user_id'] && $userType !== 'admin') {
     echo '<div class="dashboard-container"><div class="dashboard-header"><h1>Unauthorized</h1></div></div>';
-    include 'footer.php';
+    include __DIR__ . '/../Views/footer.php';
     exit;
 }
 ?>
 <?php
 $showActions = false;
 if (
-    ($userType === 'lawyer' && $appt['status'] === 'pending') ||
+    ($userType === 'lawyer' && ($appt['status'] === 'pending' || $appt['status'] === 'confirmed')) ||
     ($userType === 'customer' && ($appt['status'] === 'pending' || $appt['status'] === 'confirmed')) ||
     ($userType === 'customer' && $appt['status'] === 'completed')
 ) {
@@ -56,7 +52,14 @@ if (
             <h2>Appointment Summary</h2>
             <table class="summary-table">
                 <tr><th>ID</th><td>#<?php echo $appt['id']; ?></td></tr>
-                <tr><th>Status</th><td><span class="badge badge-<?php echo $appt['status']; ?>"><?php echo ucfirst($appt['status']); ?></span></td></tr>
+                <tr><th>Status</th><td>
+<select class="status-select" data-appt-id="<?php echo $appt['id']; ?>" data-current-status="<?php echo $appt['status']; ?>">
+    <option value="pending" <?php if ($appt['status']==='pending') echo 'selected'; ?>>Pending</option>
+    <option value="confirmed" <?php if ($appt['status']==='confirmed') echo 'selected'; ?>>Confirmed</option>
+    <option value="completed" <?php if ($appt['status']==='completed') echo 'selected'; ?>>Completed</option>
+    <option value="cancelled" <?php if ($appt['status']==='cancelled') echo 'selected'; ?>>Cancelled</option>
+</select>
+</td></tr>
                 <tr><th>Date</th><td><?php echo date('Y-m-d', strtotime($appt['appointment_date'])); ?></td></tr>
                 <tr><th>Time</th><td><?php echo date('g:i A', strtotime($appt['appointment_time'])); ?></td></tr>
                 <tr><th>Meeting Type</th><td><?php echo ucfirst($appt['meeting_type']); ?></td></tr>
@@ -85,6 +88,8 @@ if (
                 <?php if ($userType === 'lawyer' && $appt['status'] === 'pending'): ?>
                     <a href="#" class="btn btn-success btn-action" data-appt-id="<?php echo $appt['id']; ?>" data-action="accept">Accept</a>
                     <a href="#" class="btn btn-danger btn-action" data-appt-id="<?php echo $appt['id']; ?>" data-action="cancel">Cancel</a>
+                <?php elseif ($userType === 'lawyer' && $appt['status'] === 'confirmed'): ?>
+                    <a href="#" class="btn btn-primary btn-action" data-appt-id="<?php echo $appt['id']; ?>" data-action="complete">Mark as Completed</a>
                 <?php elseif ($userType === 'customer' && ($appt['status'] === 'pending' || $appt['status'] === 'confirmed')): ?>
                     <a href="#" class="btn btn-danger btn-action" data-appt-id="<?php echo $appt['id']; ?>" data-action="cancel">Cancel</a>
                 <?php endif; ?>
@@ -108,7 +113,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const apptId = btn.dataset.apptId;
             const action = btn.dataset.action;
             if (!apptId || !action) return;
-            let msg = action === 'accept' ? 'Accept this appointment?' : 'Cancel this appointment?';
+            let msg = '';
+            if (action === 'accept') msg = 'Accept this appointment?';
+            else if (action === 'cancel') msg = 'Cancel this appointment?';
+            else if (action === 'complete') msg = 'Mark this appointment as completed?';
+            else msg = 'Are you sure?';
             if (!confirm(msg)) return;
             fetch('api/book_appointment.php', {
                 method: 'POST',
@@ -122,6 +131,34 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(() => showToast('Request failed', 'error'));
         });
+    });
+    function updateStatusSelectStyle(sel) {
+        sel.classList.remove('pending', 'confirmed', 'completed', 'cancelled');
+        sel.classList.add(sel.value);
+    }
+    document.querySelectorAll('.status-select').forEach(function(sel) {
+        updateStatusSelectStyle(sel);
+        sel.addEventListener('change', function() {
+            updateStatusSelectStyle(this);
+            const apptId = this.dataset.apptId;
+            const newStatus = this.value;
+            const currentStatus = this.dataset.currentStatus;
+            if (newStatus === currentStatus) return;
+            this.disabled = true;
+            fetch('api/book_appointment.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `action=set_status&appointment_id=${encodeURIComponent(apptId)}&new_status=${encodeURIComponent(newStatus)}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                showToast(data.message, data.success ? 'success' : 'error');
+                if (data.success) setTimeout(() => window.location.reload(), 800);
+                else this.disabled = false;
+            })
+            .catch(() => { showToast('Request failed', 'error'); this.disabled = false; });
+        });
+        sel.addEventListener('input', function() { updateStatusSelectStyle(this); });
     });
 });
 </script>
@@ -251,6 +288,31 @@ document.addEventListener('DOMContentLoaded', function() {
     min-width: 120px;
     text-align: left;
 }
+.status-select {
+    appearance: none;
+    -webkit-appearance: none;
+    border: none;
+    outline: none;
+    font-size: 0.92em;
+    font-weight: 600;
+    color: #fff;
+    border-radius: 12px;
+    padding: 0.25em 1.7em 0.25em 0.7em;
+    background: #fbbf24;
+    transition: background 0.18s, color 0.18s;
+    min-width: 110px;
+    box-shadow: 0 1px 4px rgba(44,62,80,0.07);
+    cursor: pointer;
+    margin: 0;
+    display: inline-block;
+    text-align: center;
+}
+.status-select.pending { background: #fbbf24; color: #fff; }
+.status-select.confirmed { background: #38bdf8; color: #fff; }
+.status-select.completed { background: #22c55e; color: #fff; }
+.status-select.cancelled { background: #ef4444; color: #fff; }
+.status-select:disabled { opacity: 0.7; cursor: not-allowed; }
+.status-select option { color: #23272f; background: #fff; }
 @media (max-width: 1200px) {
     .appointment-sections.three-cols { flex-direction: column; gap: 1.5rem; }
     .summary-section, .parties-section, .actions-section { max-width: 100%; }

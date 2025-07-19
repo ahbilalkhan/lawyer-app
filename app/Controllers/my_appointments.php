@@ -5,19 +5,20 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['user_type'] ?? '') !== 'customer
     exit;
 }
 $page_title = 'My Appointments';
-include 'header.php';
-require_once 'db.php';
+include __DIR__ . '/../Views/header.php';
+require_once __DIR__ . '/../Models/db.php';
 
 $userId = $_SESSION['user_id'];
-$sql = "SELECT a.*, lp.id as lawyer_profile_id, u.full_name as lawyer_name, lp.specialization, lp.location
-        FROM appointments a
-        JOIN lawyer_profiles lp ON a.lawyer_id = lp.id
-        JOIN users u ON lp.user_id = u.id
-        WHERE a.customer_id = ?
-        ORDER BY a.appointment_date DESC, a.appointment_time DESC";
-$stmt = $pdo->prepare($sql);
-$stmt->execute([$userId]);
-$appointments = $stmt->fetchAll();
+$sql = "SELECT a.*, lp.id as lawyer_profile_id, u.full_name as lawyer_name, lp.specialization, lp.location FROM appointments a JOIN lawyer_profiles lp ON a.lawyer_id = lp.id JOIN users u ON lp.user_id = u.id WHERE a.customer_id = ? ORDER BY a.appointment_date DESC, a.appointment_time DESC";
+$stmt = mysqli_prepare($conn, $sql);
+mysqli_stmt_bind_param($stmt, 'i', $userId);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$appointments = [];
+while ($row = mysqli_fetch_assoc($result)) {
+    $appointments[] = $row;
+}
+mysqli_stmt_close($stmt);
 ?>
 <div class="dashboard-container">
     <div class="dashboard-header">
@@ -84,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
-<?php include 'footer.php'; ?>
+<?php include __DIR__ . '/../Views/footer.php'; ?>
 <style>
 .appointments-table-wrapper {
     overflow-x: auto;

@@ -1,6 +1,6 @@
 <?php
 $page_title = "Login";
-include 'header.php';
+include __DIR__ . '/../Views/header.php';
 
 // Redirect if already logged in
 if (isset($_SESSION['user_id'])) {
@@ -23,7 +23,7 @@ if (isset($_SESSION['user_id'])) {
             <input type="password" id="password" name="password" required>
         </div>
         
-        <button type="submit" class="btn btn-primary btn-full">
+        <button type="submit" class="btn btn-primary">
             <i class="fas fa-sign-in-alt"></i> Login
         </button>
     </form>
@@ -110,4 +110,4 @@ if (isset($_SESSION['user_id'])) {
 }
 </style>
 
-<?php include 'footer.php'; ?>
+<?php include __DIR__ . '/../Views/footer.php'; ?>

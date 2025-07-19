@@ -5,29 +5,46 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_type']) || $_SESSION[
     exit;
 }
 $page_title = 'Manage Users';
-include '../header.php';
-require_once '../db.php';
+include __DIR__ . '/../../Views/header.php';
+require_once __DIR__ . '/../../Models/db.php';
 
 // Handle search and filter
 $search = $_GET['search'] ?? '';
 $type = $_GET['type'] ?? '';
 $where = [];
 $params = [];
+$paramTypes = '';
 if ($search) {
     $where[] = "(username LIKE ? OR full_name LIKE ? OR email LIKE ?)";
     $params[] = "%$search%";
     $params[] = "%$search%";
     $params[] = "%$search%";
+    $paramTypes .= 'sss';
 }
 if ($type) {
     $where[] = "user_type = ?";
     $params[] = $type;
+    $paramTypes .= 's';
 }
 $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 $sql = "SELECT id, username, full_name, email, user_type, is_active, created_at FROM users $whereSql ORDER BY created_at DESC";
-$stmt = $pdo->prepare($sql);
-$stmt->execute($params);
-$users = $stmt->fetchAll();
+if (!empty($params)) {
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, $paramTypes, ...$params);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $users = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $users[] = $row;
+    }
+    mysqli_stmt_close($stmt);
+} else {
+    $result = mysqli_query($conn, $sql);
+    $users = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $users[] = $row;
+    }
+}
 ?>
 
 <div class="dashboard-container">
@@ -141,7 +158,7 @@ $users = $stmt->fetchAll();
   </div>
 </div>
 
-<?php include '../footer.php'; ?>
+<?php include __DIR__ . '/../../Views/footer.php'; ?>
 
 <style>
 .user-filter-form {

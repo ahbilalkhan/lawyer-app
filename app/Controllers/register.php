@@ -1,6 +1,6 @@
 <?php
 $page_title = "Register";
-include 'header.php';
+include __DIR__ . '/../Views/header.php';
 
 // Redirect if already logged in
 if (isset($_SESSION['user_id'])) {
@@ -259,4 +259,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php include 'footer.php'; ?>
+<?php include __DIR__ . '/../Views/footer.php'; ?>

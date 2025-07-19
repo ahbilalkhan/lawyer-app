@@ -1,7 +1,7 @@
 <?php
 $page_title = "Lawyer Profile";
-include 'header.php';
-require_once 'db.php';
+include __DIR__ . '/../Views/header.php';
+require_once __DIR__ . '/../Models/db.php';
 
 $lawyerId = intval($_GET['id'] ?? 0);
 if ($lawyerId === 0) {
@@ -9,52 +9,43 @@ if ($lawyerId === 0) {
     exit;
 }
 
-try {
-    // Get lawyer details
-    $sql = "SELECT 
-                lp.*, 
-                u.full_name, 
-                u.email, 
-                u.phone,
-                GROUP_CONCAT(DISTINCT ls.service_type) as services 
-            FROM lawyer_profiles lp
-            JOIN users u ON lp.user_id = u.id
-            LEFT JOIN lawyer_services ls ON lp.id = ls.lawyer_id
-            WHERE lp.id = ? AND lp.is_verified = 1
-            GROUP BY lp.id
-            LIMIT 1";
+// Get lawyer details
+$sql = "SELECT lp.*, u.full_name, u.email, u.phone, GROUP_CONCAT(DISTINCT ls.service_type) as services FROM lawyer_profiles lp JOIN users u ON lp.user_id = u.id LEFT JOIN lawyer_services ls ON lp.id = ls.lawyer_id WHERE lp.id = ? AND lp.is_verified = 1 GROUP BY lp.id LIMIT 1";
+$stmt = mysqli_prepare($conn, $sql);
+mysqli_stmt_bind_param($stmt, 'i', $lawyerId);
+mysqli_stmt_execute($stmt);
+$result = mysqli_stmt_get_result($stmt);
+$lawyer = mysqli_fetch_assoc($result);
+mysqli_stmt_close($stmt);
 
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([$lawyerId]);
-    $lawyer = $stmt->fetch();
-
-    if (!$lawyer) {
-        header('Location: lawyers.php');
-        exit;
-    }
-
-    // Get lawyer's reviews
-    $reviewsSql = "SELECT r.*, u.full_name as customer_name 
-                   FROM reviews r 
-                   JOIN users u ON r.customer_id = u.id 
-                   WHERE r.lawyer_id = ? 
-                   ORDER BY r.created_at DESC 
-                   LIMIT 10";
-    $reviewsStmt = $pdo->prepare($reviewsSql);
-    $reviewsStmt->execute([$lawyerId]);
-    $reviews = $reviewsStmt->fetchAll();
-
-    // Get lawyer's time slots
-    $timeSlotsSql = "SELECT * FROM time_slots WHERE lawyer_id = ? AND is_available = 1 ORDER BY day_of_week";
-    $timeSlotsStmt = $pdo->prepare($timeSlotsSql);
-    $timeSlotsStmt->execute([$lawyerId]);
-    $timeSlots = $timeSlotsStmt->fetchAll();
-
-} catch (PDOException $e) {
-    http_response_code(500);
-    echo "Database error: " . $e->getMessage();
+if (!$lawyer) {
+    header('Location: lawyers.php');
     exit;
 }
+
+// Get lawyer's reviews
+$reviewsSql = "SELECT r.*, u.full_name as customer_name FROM reviews r JOIN users u ON r.customer_id = u.id WHERE r.lawyer_id = ? ORDER BY r.created_at DESC LIMIT 10";
+$reviewsStmt = mysqli_prepare($conn, $reviewsSql);
+mysqli_stmt_bind_param($reviewsStmt, 'i', $lawyerId);
+mysqli_stmt_execute($reviewsStmt);
+$reviewsResult = mysqli_stmt_get_result($reviewsStmt);
+$reviews = [];
+while ($row = mysqli_fetch_assoc($reviewsResult)) {
+    $reviews[] = $row;
+}
+mysqli_stmt_close($reviewsStmt);
+
+// Get lawyer's time slots
+$timeSlotsSql = "SELECT * FROM time_slots WHERE lawyer_id = ? AND is_available = 1 ORDER BY day_of_week";
+$timeSlotsStmt = mysqli_prepare($conn, $timeSlotsSql);
+mysqli_stmt_bind_param($timeSlotsStmt, 'i', $lawyerId);
+mysqli_stmt_execute($timeSlotsStmt);
+$timeSlotsResult = mysqli_stmt_get_result($timeSlotsStmt);
+$timeSlots = [];
+while ($row = mysqli_fetch_assoc($timeSlotsResult)) {
+    $timeSlots[] = $row;
+}
+mysqli_stmt_close($timeSlotsStmt);
 ?>
 
 <div class="profile-container">
@@ -536,4 +527,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php include 'footer.php'; ?>
+<?php include __DIR__ . '/../Views/footer.php'; ?>
