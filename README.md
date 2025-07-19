@@ -2,6 +2,8 @@
 
 A web-based platform for connecting clients with qualified lawyers, managing appointments, and handling legal service reviews. Built with plain PHP (procedural style) and MySQL.
 
+---
+
 ## Features
 
 ### For Clients/Users
@@ -87,6 +89,22 @@ See `schema.sql` for full details and sample data.
 - Register as a user, lawyer, or log in as admin (default admin: `admin@lawyerapp.com`).
 - Search for lawyers, book appointments, and manage your profile.
 - Admins can manage users, appointments, and reviews from the admin dashboard.
+---
+
+## How to Run the Project Locally
+
+You can use PHP's built-in web server for local development:
+
+```sh
+cd lawyer-app
+php -S localhost:8000 -t .
+```
+
+- Make sure your database is running and configured as described above.
+- Visit [http://localhost:8000](http://localhost:8000) in your browser.
+
+For production, configure your web server (Apache, Nginx, etc.) to point to the project root or the appropriate public directory.
+---
 
 ## File Structure
 
