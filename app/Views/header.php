@@ -33,11 +33,11 @@ $basePath = $isInPublicFolder ? '' : 'public/';
                 
                 <div class="auth-buttons">
                     <?php if (isset($_SESSION['user_id'])): ?>
-                        <div class="user-avatar" style="display:inline-block;vertical-align:middle;margin-right:10px;">
+                        <a href="dashboard.php" class="btn btn-secondary" style="display:flex;align-items:center;gap:8px;">
                             <?php if (!empty($_SESSION['profile_image'])): ?>
-                                <img src="<?php echo htmlspecialchars($_SESSION['profile_image']); ?>" alt="Avatar" style="width:40px;height:40px;object-fit:cover;border-radius:50%;border:2px solid #ccc;" />
+                                <img src="<?php echo htmlspecialchars($_SESSION['profile_image']); ?>" alt="Avatar" style="width:28px;height:28px;object-fit:cover;border-radius:50%;border:2px solid #ccc;" />
                             <?php else: ?>
-                                <div style="width:40px;height:40px;background:#888;color:#fff;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:bold;font-size:18px;border:2px solid #ccc;">
+                                <span style="width:28px;height:28px;background:#888;color:#fff;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:bold;font-size:14px;border:2px solid #ccc;">
                                     <?php
                                         $initials = '';
                                         if (!empty($_SESSION['full_name'])) {
@@ -49,11 +49,9 @@ $basePath = $isInPublicFolder ? '' : 'public/';
                                         }
                                         echo $initials;
                                     ?>
-                                </div>
+                                </span>
                             <?php endif; ?>
-                        </div>
-                        <a href="dashboard.php" class="btn btn-secondary">
-                            <i class="fas fa-user"></i> Dashboard
+                             Dashboard
                         </a>
                         <a href="/logout.php" class="btn btn-primary">
                             <i class="fas fa-sign-out-alt"></i> Logout
