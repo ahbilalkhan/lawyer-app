@@ -79,9 +79,17 @@ function createLawyerCard(lawyer) {
     const stars = generateStars(lawyer.rating);
     const services = lawyer.services ? lawyer.services.split(',') : [];
     
+    // Use profile_image if available, else fallback to initial
+    let avatarHtml = '';
+    if (lawyer.profile_image && lawyer.profile_image.trim() !== '') {
+        avatarHtml = `<img src="${lawyer.profile_image}" alt="${lawyer.full_name} profile image" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />`;
+    } else {
+        avatarHtml = lawyer.full_name.charAt(0).toUpperCase();
+    }
+
     card.innerHTML = `
         <div class="lawyer-avatar">
-            ${lawyer.full_name.charAt(0).toUpperCase()}
+            ${avatarHtml}
         </div>
         <div class="lawyer-info">
             <h3>${lawyer.full_name}</h3>

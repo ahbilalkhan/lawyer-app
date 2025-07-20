@@ -10,6 +10,7 @@ $sql = "
     SELECT 
         lp.id,
         u.full_name,
+        u.profile_image,
         lp.specialization,
         lp.experience_years,
         lp.location,
